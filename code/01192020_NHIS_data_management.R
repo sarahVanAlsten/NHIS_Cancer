@@ -1,13 +1,15 @@
+##########################################################################
 #Name: Sarah Van Alsten
 #Date Created: January 19, 2020
 #Dataset used: National Health Interview Survey (years = 2000 - 2014)
-#Packages Used: tidyverse, ipumsr, survey
+#Packages Used: tidyverse, ipumsr
 #Purpose: Read in and clean NHIS data
-#Last Update: January 19, 2020
+#Last Update: March 21, 2020
 ###########################################################################
 #read in the IPUMS data 
 # NOTE: To load data, you must download both the extract's data and the DDI
 # and also set the working directory to the folder with these files (or change the path below).
+#warning: it's a BIG dataset and might take a while to load
 
 #install.packages("ipumsr") #to access IPUMS data
 #install.packages("tidyverse") #for data cleaning
@@ -17,9 +19,6 @@ library(tidyverse)
 #read in data
 ddi <- read_ipums_ddi("data\\nhis_00010.xml")
 subData <- read_ipums_micro(ddi) 
-
-#take a look at variable names
-names(subData)
 
 #summarise how many observations by wave
 subData %>%
@@ -32,8 +31,8 @@ subData %>%
   group_by(MORTELIG) %>%
   summarise(n())
 
-#create summary data of all individuals with cancer by year and type
-#cancer by type and by year
+#create summary data of all individuals with cancer by year and type to get N's
+#all 2's = YES to a question "Were you ever diagnosed with ___x___ cancer?"
 cancer_Type_Year <- subData %>%
   group_by(YEAR)%>%
   summarise(Breast = sum(CNBRES==2),
@@ -68,7 +67,7 @@ cancer_Type_Year <- subData %>%
             Other = sum(CNOTHR==2),
             TotalPeople = n()) #total people = total responses in that year
 
-#get total number of people with ANY cancer by year
+#get total number of people with ANY cancer by year (col 1:31 = cancer type columns)
 cancer_Type_Year$TotalCancer <- rowSums(cancer_Type_Year[,1:31])
 
 #additionally, summarise the total # people with each type across years by summing all columns
@@ -79,6 +78,8 @@ total_cancer_type <-
 
 #mortality status: 1 = dead, 2= alive, 9 = ineligible
 table(subData$MORTSTAT)
+
+#make a binary yes/no mortality variable
 subData$DEAD <- ifelse(subData$MORTSTAT == 1, 1, 
                         ifelse(subData$MORTSTAT == 2, 0, NA))
 
@@ -88,7 +89,8 @@ subData$DEAD <- ifelse(subData$MORTSTAT == 1, 1,
 #6 = alzheimers, 7 = diabetes, 8 =influenza, 9=nephritis, 10=all other, 96 = NIU/NA (bc ineligible)
 
 #binary leading cause of death recorded
-#make people who didn't die or were ineligible missing for now so 0 = dead but not of that cause
+#make people who didn't die or were ineligible missing for now so 0 = dead, just not of the
+#specified cause, 1= dead of specified cause
 subData <- subData %>%
   mutate(CancerDeath = if_else(MORTUCODLD == 2, 1, 
                                ifelse(MORTUCODLD != 96, 0, NA))) %>%
@@ -111,7 +113,7 @@ subData <- subData %>%
   mutate(OtherDeath = if_else(MORTUCODLD == 10, 1,
                               ifelse(MORTUCODLD != 96, 0, NA)))
 
-#above was LEADING cause of death, which is only available for deaths 2004
+#above was LEADING cause of death, which is only available for deaths 2004 of later
 #now, add in the more specific and granular causes, which were available from 2000-2004
 #cancers are codes between (and including) 20 - 44.
 subData <- subData %>%
@@ -124,28 +126,22 @@ subData <- subData %>%
 #some in col "1" potentially not in row "1" --> had cancer listed as contributor but not leading
 table(subData$CancerDeath, subData$cancMort, useNA = "ifany")
 
-
-#Ordinal recoding of income to Poverty Level and Binary if in Poverty
-#14 is highest category... everything above is missing
-#Less than 4 = Below FPL
-subData <- subData %>%
-  mutate(PovertyRec = ifelse(POVIMP5 > 14, NA, POVIMP5)) %>%
-  mutate(PovertyBinaryY = ifelse(POVIMP5 < 4, 1, 0))
-
 #recode missings in BMI and then create categorical BMI variable
+#using the normal cutoffs (18.5, 25, 30 for underweight, overweight, obese)
 subData <- subData %>% 
   mutate(BMI = ifelse(BMICALC %in% c(0,996), NA, BMICALC),
          BMIcat = ifelse(BMI < 18.5, 1,
                          ifelse(BMI < 25, 2,
                                 ifelse(BMI < 30, 3, 4)))) #missings stay missing bc can't compare NA to number
 
-#create a binary cancer ever variable in original data
+#create a binary cancer ever variable in original data... any type of cancer
 subData <- subData %>%
   mutate(CancerEvBin = ifelse(CANCEREV == 2, 1,
                               ifelse(CANCEREV == 1, 0, NA)))
 
 #create cancer type variable in orginal data. For this, 
-#1 = YES had that type, missing is DK/RF/Not ascertained, and 0 = NO (including no cancer and cancer but not that type)
+#1 = YES had that type, missing is DK/RF/Not ascertained, and
+#0 = NO (including no cancer and cancer but not that type)
 subData <- subData %>%
   mutate(
     BreastCan = ifelse(CNBRES == 2, 1,
@@ -217,7 +213,8 @@ check <-
   select(-CancerDeath) %>% #don't include death bc people could develop cancer + die after interview
   group_by(CancerEvBin) %>%
   summarise_at(vars(contains("Can", ignore.case = FALSE)), .funs = ~(sum(. == 1, na.rm = T)))
-    
+#View(check)
+#looks good   
 
 #age of cancer diagnosis for the different types
 #use REGEX to select cols beginning with CN and ending with AG
@@ -276,16 +273,13 @@ subData <- subData %>%
 #only one question (BarrierMedR) asked in 2000-2010,
 #in later years, asked specifics (lessMed, skipMed, delayMed and BarrierMedR)
 #any yes = YES(1), if everything missing stay missing (NA), else no(0)
+#alternate and foreign med not included bc these are substitiution NOT abstinence
+#medication bx's and don't capture construct we're going for
 subData <- subData %>%
   mutate(CRN = ifelse(is.na(BarrierMedR) & YEAR <=2010, NA,
                       ifelse(is.na(BarrierMedR)& is.na(skipMed) & is.na(lessMed) &is.na(delayMed) & (YEAR >=2011), NA,
                              ifelse(BarrierMedR == 0 & YEAR <=2010, 0,
                                     ifelse(BarrierMedR == 1 | skipMed == 1 | lessMed == 1 | delayMed == 1, 1, 0)))))
-
-##################################
-#Worried about health care cost: is reverse coded
-subData <- subData %>%
-  mutate(WorryHC = ifelse(WRYHCCST %in% c(0,7,8,9), NA, 4-WRYHCCST))
 
 #############################################
 #RACE self reported
@@ -299,39 +293,28 @@ subData <- subData %>%
 
 ###############################################
 #Education level
-subData <- 
-  subData %>% 
+subData <- subData %>% 
   mutate(EduR = ifelse(EDUCREC1 == 0, NA,#not in use/refused
-                       ifelse(EDUCREC1 <= 13, 1, #HS or less
-                              ifelse(EDUCREC1 < 15, 2, #some college
-                                     ifelse(EDUCREC1<17,3, NA))))) #college or more
+                       ifelse(EDUCREC1 <= 12, 1, #less than HS
+                              ifelse(EDUCREC1 == 13, 2, #hs degree only
+                                     ifelse(EDUCREC1 < 15, 3, #some college
+                                            ifelse(EDUCREC1<17, 4, NA)))))) #college or more
+
 
 ################################################
 #Income categorical
 #While categories are not same size, NHIS coding is not consistent in groupings.
 #Some potential codings are 10k wide, others are 5k wide, thus the diff gap size btwn categories
-subData <-
-  subData %>%
+subData <- subData %>%
   mutate(IncomeR = ifelse(INCIMP1<5, 0, #<25k
                           ifelse(INCIMP1<22,1, #<45k
                                  ifelse(INCIMP1<52,2, #<75k
-                                        ifelse(is.na(INCIMP1),NA,
-                                               5)))))#75k +
+                                        ifelse(is.na(INCIMP1),NA, 3)))))#75k +
 
-####################################################
-#Satisfaction With Health Care
-#0, 6,7,8,9 = missing, all others are reverse coded, 5= didn't get healthcare
-#SatisHC = treated those without healthcare as reporting a 0, SatisHC2 treats them as missing
-subData <-
-  subData%>%
-  mutate(SatisHC = ifelse(HCSATIS12M>0 & HCSATIS12M<5, 5-HCSATIS12M,
-                          ifelse(HCSATIS12M==5, 0, NA)),
-         SatisHC2 = ifelse(HCSATIS12M>0 & HCSATIS12M<5, 5-HCSATIS12M, NA))
 
 ######################################################
 #additional questions about paying for Health Care
-subData <-
-  subData %>%
+subData <- subData %>%
   #currently paying medical bills over time
   mutate(PayOvTime = ifelse(HIPAYMEDBIL==1,0,
                             ifelse(HIPAYMEDBIL==2,1, NA)),
@@ -349,33 +332,10 @@ subData <-
                                                ifelse(HIMCARE==2,4, #medicare
                                                       ifelse(HINONE ==1,5,NA)))))))#other
 
-#############################################
-#degree of worry that wouldn't be able to pay for a serious illness, reverse coded
-#0, 8, 9 missing
-subData <- subData %>%
-  mutate(WorrySerIll = ifelse(WRYMEDCST>0 & WRYMEDCST<7, 4- WRYMEDCST, NA))
-################################################
-#Kessler 6 Distress Scale: proxy for depression
-#first recode anything >6 (RF/DK) to missing
-subData <- subData %>%
-  mutate(ASADR = ifelse(ASAD<6, ASAD, NA),
-         AEFFORTR = ifelse(AEFFORT<6, AEFFORT, NA),
-         ARESTLESSR = ifelse(ARESTLESS <6, ARESTLESS, NA),
-         AHOPELESSR = ifelse(AHOPELESS<6, AHOPELESS, NA),
-         ANERVOUSR = ifelse(ANERVOUS<6, ANERVOUS, NA),
-         AWORTHLESSR = ifelse(AWORTHLESS<6, AWORTHLESS, NA))
-
-#add together to get scale total
-subData <- subData %>%
-  mutate(Kessler6 = (ASADR+ AEFFORTR+ ARESTLESSR+ AHOPELESSR+ ANERVOUSR+ AWORTHLESSR))
-
-#per recommendations: 13 or more = severe distress
-subData$Kessler6Bin <- ifelse(subData$Kessler6 >=13, 1,0)
 
 #####################################################3
 #Smoking 
-subData <-
-  subData %>%
+subData <- subData %>%
   mutate(SmokeR = ifelse(SMOKESTATUS2 %in% c(10,11,12,13), 2, #current, including all pack/day amts
                          ifelse(SMOKESTATUS2 %in% c(20,40),1, #former
                                 ifelse(SMOKESTATUS2 ==30, 0, NA)))) #never
@@ -408,8 +368,7 @@ subData <- subData %>%
                                                                                            ifelse(INTERVWMO==11,304,
                                                                                                   ifelse(INTERVWMO==12,334,NA)))))))))))))
 #if its a leap year add an extra day if after February
-subData <-
-  subData %>%
+subData <- subData %>%
   mutate(dayOfYear = ifelse(leapYear==1 & INTERVWMO>2, dayOfYear+1, dayOfYear)) #leap year add a day
 
 #now set an initial starting date to which these will be added
@@ -428,6 +387,121 @@ subData <- subData %>%
                          difftime("2015-12-31", enrollDate, units = "weeks"))) #if alive, right censor
 
 
-#write out the cleaned data to reuse in future
-write.csv(subData, "data\\nhis_cleaned.csv")
+#how long ago since cancer diagnosis
+subData <- subData %>%
+  mutate(yrsBreast = AGE - CNBRESAG,
+         yrsLung = AGE - CNLUNGAG,
+         yrsColon = AGE - CNCOLNAG,
+         yrsMelan = AGE - CNMELNAG,
+         yrsNonMelan = AGE - CNSKNMAG,
+         yrsOthSkin = AGE - CNSKDKAG,
+         yrsUter = AGE - CNUTERAG,
+         yrsBlad = AGE - CNBLADAG,
+         yrsRect = AGE - CNRECTAG,
+         yrsCerv = AGE - CNCERVAG,
+         yrsLymp = AGE - CNLYMPAG,
+         yrsLiver = AGE - CNLIVRAG,
+         yrsLeuk = AGE- CNLEUKAG,
+         yrsGall = AGE - CNGALLAG,
+         yrsStom = AGE - CNSTOMAG,
+         yrsSoft = AGE - CNSOFTAG,
+         yrsEsoph = AGE - CNESOPAG,
+         yrsProst = AGE - CNPROSAG,
+         yrsPanc = AGE - CNPANCAG,
+         yrsKidney = AGE - CNKIDNAG,
+         yrsThyroid = AGE - CNTHYRAG,
+         yrsTest = AGE - CNTESTAG,
+         yrsBrain = AGE - CNBRANAG,
+         yrsBone = AGE - CNBONEAG)
+
+
+#individuals with a dx 10 years or less ago
+within10 <- subData %>%
+     filter(yrsBreast <= 10 | yrsLung <= 10 | yrsColon <= 10 | yrsMelan <= 10 |
+            yrsNonMelan <=10 | yrsOthSkin <= 10 | yrsUter <= 10 | yrsBlad <= 10 |
+              yrsRect <= 10 | yrsCerv <= 10 | yrsLymp <= 10 |
+              yrsLiver <= 10 | yrsLeuk <=10 | yrsGall <=10 | yrsStom <=10 | 
+              yrsEsoph <=10 | yrsProst <= 10 | yrsPanc <=10 | yrsKidney <= 10 |
+              yrsThyroid <=10 | yrsTest <= 10 | yrsBrain <=10 | yrsBone <= 10)
+
+#individuals within 5 yrs
+within5 <- subData %>%
+  filter(yrsBreast <= 5 | yrsLung <= 5 | yrsColon <= 5 | yrsMelan <= 5 |
+           yrsNonMelan <=5 | yrsOthSkin <= 5 | yrsUter <= 5 | yrsBlad <= 5 |
+           yrsRect <= 5 | yrsCerv <= 5 | yrsLymp <= 5 |
+           yrsLiver <= 5 | yrsLeuk <=5 | yrsGall <=5 | yrsStom <=5 | 
+           yrsEsoph <=5 | yrsProst <= 5 | yrsPanc <=5 | yrsKidney <= 5 |
+           yrsThyroid <=5 | yrsTest <= 5 | yrsBrain <=5 | yrsBone <= 5)
+
+#individuals diagnosed within 1 yr
+within1 <- subData %>%
+  filter(yrsBreast <= 1 | yrsLung <= 1 | yrsColon <= 1 | yrsMelan <= 1 |
+           yrsNonMelan <=1 | yrsOthSkin <= 1 | yrsUter <= 1 | yrsBlad <= 1 |
+           yrsRect <= 1 | yrsCerv <= 1 | yrsLymp <= 1 |
+           yrsLiver <= 1 | yrsLeuk <=1 | yrsGall <=1 | yrsStom <=1 | 
+           yrsEsoph <=1 | yrsProst <= 1 | yrsPanc <=1 | yrsKidney <= 1 |
+           yrsThyroid <=1 | yrsTest <= 1 | yrsBrain <=1 | yrsBone <= 1)
+
+
+#make a colorectal cancer ever + colorectal age
+#(currently it is separated into colon and rectal individually)
+#first see if any individual had both
+table(subData$ColonCan, subData$RectalCan) #27 indivduals reported both
+
+#look at discrepancy in age of diagnosis for these 14 individuals
+colorectal <- 
+  subData %>%
+  filter(ColonCan ==1 & RectalCan == 1) %>%
+  select(CNCOLNAG, CNRECTAG) 
+
+#make one cancer column for the combination of the two
+subData <- subData %>%
+  rowwise()%>%
+  mutate(ColRectCan = ifelse(ColonCan == 1 | RectalCan == 1, 1, 0),
+         #age at dx = max of two to increase possible sample size of dx in last 5 yrs
+         #or missing if both are missing
+         ColRectAge = ifelse(is.na(CNCOLNAG) & is.na(CNRECTAG), NA,
+                             max(CNCOLNAG, CNRECTAG, na.rm = T))) 
+
+#create a yrs ago var for colorectal
+subData <- subData %>%
+  mutate(yrsColorectal = AGE - ColRectAge)
+
+#how many cases will we have if we restrict to those with dx in past 5 yrs?
+subData %>%
+  ungroup() %>% #remove the rowwise designation from above
+  select(yrsColorectal, yrsBreast, yrsProst, yrsLung, yrsLymp) %>%
+  summarise_all(.funs = ~(sum(. <=5, na.rm = T))) #count cases with dx <=5 yrs ago
+
+#1263 CRC, 2563 Breast, 2023 Prostate, 760 Lung, 495 Lymphoma
+
+#make an appropriate weighting variable:
+#per NHIS analytic guidelines, when combining multiple years
+#divide individual sampling weights by # waves (here, 15 for 2000-2014)
+subData <- subData %>%
+  mutate(new_weight = MORTWTSA/15) #mortality weights
+
+#new age as numeric var - it's currently 'haven labelled' which
+#works fine to compute ages and such but not for descriptives
+subData <- subData %>%
+  mutate(age_new = as.numeric(AGE))
+
+#due to concerns over the sample size, collapse across some
+#categories of Race and Insurance
+subData <- subData %>%
+  #military or other together as one 'other' category else leave as is
+  mutate(insurance_new = ifelse(InsType %in% c(3,5), 3, InsType),
+        #Asian, American Indian/Alaska Native, Other as other
+        race_new = ifelse(RaceR %in% c(4,5,6), 4, RaceR))
+
+
+#to make data more manageable: pick just variables that we'll
+#be using in our analyses
+analyticData <- subData %>%
+  select(race_new, insurance_new, new_weight,
+         PSU, STRATA, cancMort, DEAD, fuTime,
+         CRN, lessMed, skipMed, delayMed, BarrierMedR, 
+         IncomeR, SEX, BreastCan, LymphomaCan, ProstateCan,
+         ColRectCan, LungCan, yrsBreast, yrsLymp, yrsProst,
+         yrsLung, yrsColorectal, age_new, SmokeR, EduR, BMI, BMIcat)
 
