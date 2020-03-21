@@ -23,27 +23,35 @@ svy <-svydesign(ids = ~PSU, strata = ~ STRATA, weights = ~new_weight,
                 nest = TRUE, data = analyticData)
 
 #use subset to only keep those with a breast, prostate,  lymphoma, lung or colorectal
-#cancer diagnosis in past 5 years
+#cancer diagnosis in past 5 years and are eligible for mortality followup
 #need to do it this way because SEs will be wrong for survey design if we
 #eliminate those individuals first BEFORE setting up survey design (see survey vignette)
-can.svy <- subset(svy, yrsBreast <=5 | yrsProst <= 5 |
-                    yrsColorectal <= 5 | yrsLymp <= 5 | yrsLung <=5)
+can.svy <- subset(svy, (yrsBreast <=5 | yrsProst <= 5 |
+                    yrsColorectal <= 5 | yrsLymp <= 5 | yrsLung <=5) & MORTELIG ==1)
+
+
+#make a complete cases dataset for what we will be adjusting for
+#again, do it here NOT before setting up survey to get correct SEs
+comp.svy <- subset(can.svy, !is.na(age_new) & !is.na(fuTime) & !is.na(race_new) &
+                     !is.na(IncomeR) & !is.na(EduR) & !is.na(SEX)& !is.na(insurance_new) &
+                     !is.na(CRN) & !is.na(cancMort))
+
 
 #for our continuous variables (age, BMI, fuTime), visualize distributions to ensure that
 #a t-test for comparisons is appropriate
 
 #bmi by crn
-can.svy$variables %>%
+comp.svy$variables %>%
   ggplot(aes(x = BMI, group = CRN, fill = factor(CRN))) +
   geom_histogram()
 
 #age by crn
-can.svy$variables %>%
+comp.svy$variables %>%
   ggplot(aes(x = age_new, group = CRN, fill = factor(CRN))) +
   geom_histogram()
 
 #follow up time by crn
-can.svy$variables %>%
+comp.svy$variables %>%
   ggplot(aes(x = fuTime, group = CRN, fill = factor(CRN))) +
   geom_histogram()
 
@@ -59,7 +67,7 @@ print(
                              "insurance_new", "IncomeR", "BreastCan", "ProstateCan",
                              "LungCan", "LymphomaCan", "ColRectCan", "fuTime"),
                     strata = "CRN", 
-                    data = can.svy,
+                    data = comp.svy,
                     factorVars = c("race_new", "EduR", "SmokeR", "DEAD",
                                    "cancMort", "skipMed", "delayMed", "lessMed",
                                    "BarrierMedR", "SEX", "insurance_new", "IncomeR",

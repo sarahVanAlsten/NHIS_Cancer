@@ -503,5 +503,8 @@ analyticData <- subData %>%
          CRN, lessMed, skipMed, delayMed, BarrierMedR, 
          IncomeR, SEX, BreastCan, LymphomaCan, ProstateCan,
          ColRectCan, LungCan, yrsBreast, yrsLymp, yrsProst,
-         yrsLung, yrsColorectal, age_new, SmokeR, EduR, BMI, BMIcat)
+         yrsLung, yrsColorectal, age_new, SmokeR, EduR, BMI, BMIcat,
+         MORTELIG)
+
+
 
