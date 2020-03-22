@@ -32,8 +32,8 @@ summary(all.unadj)
 #adjusted for confounders
 all.adjusted <- svycoxph(Surv(fuTime, cancMort) ~ factor(CRN) +
                            factor(SEX) + factor(insurance_new) +
-                           factor(EduR) + age_new + factor(race_new)+
-                           factor(IncomeR),
+                            age_new + factor(race_new)+
+                            yrs_any,
                          design = comp.svy)
 
 summary(all.adjusted)
@@ -49,13 +49,12 @@ summary(br.unadj)
 
 #adjusted for confounders
 br.adjusted <- svycoxph(Surv(fuTime, cancMort) ~ factor(CRN) +
-                           factor(insurance_new) +
-                           factor(EduR) + age_new + factor(race_new)+
-                           factor(IncomeR),
+                          factor(insurance_new) +
+                          age_new + factor(race_new)+
+                          yrs_any,
                          design = br.svy)
 
 summary(br.adjusted)
-
 
 # Prostate Cancer Only ----------------------------------------------------
 #(not specifying male only bc that's inherent in the data)
@@ -69,8 +68,8 @@ summary(pr.unadj)
 #adjusted for confounders
 pr.adjusted <- svycoxph(Surv(fuTime, cancMort) ~ factor(CRN) +
                           factor(insurance_new) +
-                          factor(EduR) + age_new + factor(race_new)+
-                          factor(IncomeR),
+                          age_new + factor(race_new)+
+                          yrs_any,
                         design = pr.svy)
 
 summary(pr.adjusted)
@@ -86,9 +85,9 @@ summary(lu.unadj)
 
 #adjusted for confounders
 lu.adjusted <- svycoxph(Surv(fuTime, cancMort) ~ factor(CRN) +
-                          factor(insurance_new) +
-                          factor(EduR) + age_new + factor(race_new)+
-                          factor(IncomeR),
+                          factor(SEX) + factor(insurance_new) +
+                          age_new + factor(race_new)+
+                          yrs_any,
                         design = lu.svy)
 
 summary(lu.adjusted)
@@ -105,9 +104,9 @@ summary(ly.unadj)
 
 #adjusted for confounders
 ly.adjusted <- svycoxph(Surv(fuTime, cancMort) ~ factor(CRN) +
-                          factor(insurance_new) +
-                          factor(EduR) + age_new + factor(race_new)+
-                          factor(IncomeR),
+                          factor(SEX) + factor(insurance_new) +
+                          age_new + factor(race_new)+
+                          yrs_any,
                         design = ly.svy)
 
 summary(ly.adjusted) #note loglik converged before var 12; estimates likely imprecise
@@ -124,9 +123,9 @@ summary(cr.unadj)
 
 #adjusted for confounders
 cr.adjusted <- svycoxph(Surv(fuTime, cancMort) ~ factor(CRN) +
-                          factor(insurance_new) +
-                          factor(EduR) + age_new + factor(race_new)+
-                          factor(IncomeR),
+                          factor(SEX) + factor(insurance_new) +
+                          age_new + factor(race_new)+
+                          yrs_any,
                         design = cr.svy)
 
 summary(cr.adjusted)

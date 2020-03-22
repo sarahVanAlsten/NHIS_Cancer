@@ -471,9 +471,9 @@ subData <- subData %>%
 subData %>%
   ungroup() %>% #remove the rowwise designation from above
   select(yrsColorectal, yrsBreast, yrsProst, yrsLung, yrsLymp) %>%
-  summarise_all(.funs = ~(sum(. <=5, na.rm = T))) #count cases with dx <=5 yrs ago
+  summarise_all(.funs = ~(sum(. <=10, na.rm = T))) #count cases with dx <=5 yrs ago
 
-#1263 CRC, 2563 Breast, 2023 Prostate, 760 Lung, 495 Lymphoma
+#1815 CRC, 4001 Breast, 3086 Prostate, 951 Lung, 699 Lymphoma
 
 #make an appropriate weighting variable:
 #per NHIS analytic guidelines, when combining multiple years
@@ -494,6 +494,11 @@ subData <- subData %>%
         #Asian, American Indian/Alaska Native, Other as other
         race_new = ifelse(RaceR %in% c(4,5,6), 4, RaceR))
 
+#make a years since any dx variable
+subData <- subData %>%
+  rowwise()%>%
+  mutate(yrs_any = min(yrsBreast, yrsProst, yrsColorectal, yrsLymp, yrsLung, na.rm =T)) %>%
+  ungroup() #undo the rowwise part
 
 #to make data more manageable: pick just variables that we'll
 #be using in our analyses
@@ -504,7 +509,7 @@ analyticData <- subData %>%
          IncomeR, SEX, BreastCan, LymphomaCan, ProstateCan,
          ColRectCan, LungCan, yrsBreast, yrsLymp, yrsProst,
          yrsLung, yrsColorectal, age_new, SmokeR, EduR, BMI, BMIcat,
-         MORTELIG)
+         MORTELIG, yrs_any)
 
 
 
