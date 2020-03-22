@@ -424,10 +424,92 @@ table(comp.svy12$variables$CRN, comp.svy12$variables$cancMort)
 ####################################################################
 #Assumption 3: Log linearity with continuous predictors
 ####################################################################
-resMart <- residuals(fitCPH, type="martingale")
-plot(dfSurv$X, resMart, main="Martingale-residuals for X",
-     xlab="X", ylab="Residuen", pch=20)
-lines(loess.smooth(dfSurv$X, resMart), lwd=2, col="blue")
-legend(x="bottomleft", col="blue", lwd=2, legend="LOESS fit", cex=1.4)
+#not looking at unadjusted models bc they have no continuous predictors
+
+#all cancers
+mart.all <- residuals(all.adj.1, type="martingale")
+plot(comp.svy2$variables$age_new,
+     mart.all, main="Martingale-residuals for X",
+     xlab="age", ylab="Residual", pch=20)
+lines(loess.smooth(comp.svy2$variables$age_new,
+                   mart.all), lwd=2, col="blue") #looks linear
+
+plot(comp.svy2$variables$yrs_any,
+     mart.all, main="Martingale-residuals for X",
+     xlab="yrs since dx", ylab="Residual", pch=20)
+lines(loess.smooth(comp.svy2$variables$yrs_any,
+                   mart.all), lwd=2, col="blue") #looks linear
+
+#breast cancer
+mart.br <- residuals(br.adj.1, type="martingale")
+plot(comp.svy4$variables$age_new,
+     mart.br, main="Martingale-residuals for X",
+     xlab="age", ylab="Residual", pch=20)
+lines(loess.smooth(comp.svy4$variables$age_new,
+                   mart.br), lwd=2, col="blue") #looks linear
+
+plot(comp.svy4$variables$yrs_any,
+     mart.br, main="Martingale-residuals for X",
+     xlab="yrs since dx", ylab="Residual", pch=20)
+lines(loess.smooth(comp.svy4$variables$yrs_any,
+                   mart.br), lwd=2, col="blue") #looks linear
 
 
+#prostate cancer
+mart.pr <- residuals(pr.adj.1, type="martingale")
+plot(comp.svy6$variables$age_new,
+     mart.pr, main="Martingale-residuals for X",
+     xlab="age", ylab="Residual", pch=20)
+lines(loess.smooth(comp.svy6$variables$age_new,
+                   mart.pr), lwd=2, col="blue") #looks pretty good linear
+
+plot(comp.svy6$variables$yrs_any,
+     mart.pr, main="Martingale-residuals for X",
+     xlab="yrs since dx", ylab="Residual", pch=20)
+lines(loess.smooth(comp.svy6$variables$yrs_any,
+                   mart.pr), lwd=2, col="blue") #looks linear
+
+
+#lymphoma
+mart.ly <- residuals(ly.adj.1, type="martingale")
+plot(comp.svy8$variables$age_new,
+     mart.ly, main="Martingale-residuals for X",
+     xlab="age", ylab="Residual", pch=20)
+lines(loess.smooth(comp.svy8$variables$age_new,
+                   mart.ly), lwd=2, col="blue") #looks pretty good linear
+
+plot(comp.svy8$variables$yrs_any,
+     mart.ly, main="Martingale-residuals for X",
+     xlab="yrs since dx", ylab="Residual", pch=20)
+lines(loess.smooth(comp.svy8$variables$yrs_any,
+                   mart.ly), lwd=2, col="blue") #looks linear
+
+
+#lung
+mart.lu <- residuals(lu.adj.1, type="martingale")
+plot(comp.svy10$variables$age_new,
+     mart.lu, main="Martingale-residuals for X",
+     xlab="age", ylab="Residual", pch=20)
+lines(loess.smooth(comp.svy10$variables$age_new,
+                   mart.lu), lwd=2, col="blue") #looks pretty good linear
+
+plot(comp.svy10$variables$yrs_any,
+     mart.lu, main="Martingale-residuals for X",
+     xlab="yrs since dx", ylab="Residual", pch=20)
+lines(loess.smooth(comp.svy10$variables$yrs_any,
+                   mart.lu), lwd=2, col="blue") #some deviation but not bad
+
+
+#colorectal
+mart.cr <- residuals(cr.adj.1, type="martingale")
+plot(comp.svy12$variables$age_new,
+     mart.cr, main="Martingale-residuals for X",
+     xlab="age", ylab="Residual", pch=20)
+lines(loess.smooth(comp.svy12$variables$age_new,
+                   mart.cr), lwd=2, col="blue") #looks pretty good/linear
+
+plot(comp.svy12$variables$yrs_any,
+     mart.cr, main="Martingale-residuals for X",
+     xlab="yrs since dx", ylab="Residual", pch=20)
+lines(loess.smooth(comp.svy12$variables$yrs_any,
+                   mart.cr), lwd=2, col="blue") #looks linear
