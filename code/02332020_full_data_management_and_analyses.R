@@ -580,7 +580,7 @@ print(
   nonnormal = c("BMI", "age_new", "fuTime", "yrs_any")
 )
 
-#open packages
+#open packages needed for survival analysis
 #install.packages("survival")
 #install.packages("survminer") #for ggcoxdiagnostics
 library(survival)
@@ -1298,4 +1298,59 @@ lines(loess.smooth(comp.svy12$variables$yrs_any,
                    mart.cr), lwd=2, col="blue") #looks linear
 
 
+##################################################################################
+#Draw the DAGs we were using to pick adjustment vars
+library(DiagrammeR)
+#make dag
+grViz("
+	digraph causal {
+	
+	  # Nodes
+	  node [shape = plaintext]
 
+	  U [label = 'Income']
+	  D [label = 'CRN']
+	  Y [label = 'Mortality']
+	  S [label = 'Sex']
+	  I [label = 'Insurance']
+	  R [label = 'Race']
+	  A [label = 'Age']
+	  X [label = 'Yrs Since Dx']
+	  T [label = 'Cancer Subtype']
+	  
+	  # Edges
+	  edge [color = black,
+	        arrowhead = vee]
+	  rankdir = LR
+	  D -> Y
+	  U -> D
+	  U -> Y
+	  U -> I
+	  S -> D
+	  S -> Y
+	  I -> D
+	  I -> Y
+	  R -> D
+	  R -> Y
+	  R -> I
+	  A -> I
+	  A -> D
+	  A -> Y
+	  X -> Y
+	  T -> D
+	  T -> Y
+	  R -> T
+	  A -> T
+
+	  # Graph
+	  graph [overlap = true, fontsize = 10]
+	}")
+
+#note that in this context BOTH subtype and income are unmeasured so we can't
+#adjust for them (well, technically income is measured but many references commented
+#questioning the validity of the imputation procedure, so it's a question of how much
+#the model is biased by leaving it out versus biased because of measurement error. Given
+#the tradeoff especially given that we had relatively few cases in certain instances,
+#we decided to not introduce the biased measure in, hoping that most of income's influence
+#in this context is driven through insurance pathways). Why adjust for yrs since diagnosis?
+#In this case it's not a confounder but adjusting for it does improve precision.
