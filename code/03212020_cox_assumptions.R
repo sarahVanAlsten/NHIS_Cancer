@@ -22,29 +22,29 @@ library(survminer)
 #Assumption 1: Proportional Hazards
 #####################################################################
 #All Cancers 
-(ph.all.unadj <- cox.zph(all.unadj)) #meets assumption
-(ph.all.adj <- cox.zph(all.adjusted)) #met for CRN, not globally
+(ph.all.unadj <- cox.zph(all.unadj, terms = FALSE)) #meets assumption
+(ph.all.adj <- cox.zph(all.adjusted, terms = FALSE)) #meets assumption
 
 #Breast Cancer
-(ph.br.unadj <- cox.zph(br.unadj)) #meets assumption
-(ph.br.adj <- cox.zph(br.adjusted)) #meets for CRN, not globally
+(ph.br.unadj <- cox.zph(br.unadj, terms = FALSE)) #meets assumption p = .087
+(ph.br.adj <- cox.zph(br.adjusted, terms = FALSE)) #meets assumption
 
 #Prostate Cancer
-(ph.pr.unadj <- cox.zph(pr.unadj)) #meets assumption
-(ph.pr.adj <- cox.zph(pr.adjusted)) #met for CRN, not globally
+(ph.pr.unadj <- cox.zph(pr.unadj, terms = FALSE)) #meets assumption
+(ph.pr.adj <- cox.zph(pr.adjusted, terms = FALSE)) #meets p = 0.087
 
 #Lung Cancer
-(ph.lu.unadj <- cox.zph(lu.unadj)) #meets assumption
-(ph.lu.adj <- cox.zph(lu.adjusted)) #met for CRN, not globally
+(ph.lu.unadj <- cox.zph(lu.unadj, terms = FALSE)) #meets assumption
+(ph.lu.adj <- cox.zph(lu.adjusted, terms = FALSE)) #doesn't meet p = 0.005
 
 #Lymphoma
-(ph.ly.unadj <- cox.zph(ly.unadj)) #doesn't meet assumption
-(ph.ly.adj <- cox.zph(ly.adjusted)) #not met for CRN, but met globally
+(ph.ly.unadj <- cox.zph(ly.unadj, terms = FALSE)) #doesn't meet assumption p = 0.016
+(ph.ly.adj <- cox.zph(ly.adjusted, terms = FALSE)) #meets assumption
 
 #Colorectal
-(ph.cr.unadj <- cox.zph(cr.unadj)) #meets assumption
-(ph.cr.adj <- cox.zph(cr.adjusted)) #met for CRN and met globally
-#########################################################################
+(ph.cr.unadj <- cox.zph(cr.unadj, terms = FALSE)) #meets assumption
+(ph.cr.adj <- cox.zph(cr.adjusted, terms = FALSE)) #meets assumption
+########################################################################
 #Assumption 2: No influential observations (dfbeta values)
 #########################################################################
 #all included cancers

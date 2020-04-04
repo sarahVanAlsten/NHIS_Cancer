@@ -696,28 +696,137 @@ summary(cr.adjusted)
 #Assumption 1: Proportional Hazards
 #####################################################################
 #All Cancers 
-(ph.all.unadj <- cox.zph(all.unadj)) #meets assumption
-(ph.all.adj <- cox.zph(all.adjusted)) #met for CRN, not globally
+(ph.all.unadj <- cox.zph(all.unadj, terms = FALSE)) #meets assumption
+(ph.all.adj <- cox.zph(all.adjusted, terms = FALSE)) #meets assumption
 
 #Breast Cancer
-(ph.br.unadj <- cox.zph(br.unadj)) #meets assumption
-(ph.br.adj <- cox.zph(br.adjusted)) #meets for CRN, not globally
+(ph.br.unadj <- cox.zph(br.unadj, terms = FALSE)) #meets assumption (p = .087)
+(ph.br.adj <- cox.zph(br.adjusted, terms = FALSE)) #meets assumption
 
 #Prostate Cancer
-(ph.pr.unadj <- cox.zph(pr.unadj)) #meets assumption
-(ph.pr.adj <- cox.zph(pr.adjusted)) #met for CRN, not globally
+(ph.pr.unadj <- cox.zph(pr.unadj, terms = FALSE)) #meets assumption
+(ph.pr.adj <- cox.zph(pr.adjusted, terms = FALSE)) #meets (p = 0.087)
 
 #Lung Cancer
-(ph.lu.unadj <- cox.zph(lu.unadj)) #meets assumption
-(ph.lu.adj <- cox.zph(lu.adjusted)) #met for CRN, not globally
+(ph.lu.unadj <- cox.zph(lu.unadj, terms = FALSE)) #meets assumption
+(ph.lu.adj <- cox.zph(lu.adjusted, terms = FALSE)) #doesn't meet p = 0.005
 
 #Lymphoma
-(ph.ly.unadj <- cox.zph(ly.unadj)) #doesn't meet assumption
-(ph.ly.adj <- cox.zph(ly.adjusted)) #not met for CRN, but met globally
+(ph.ly.unadj <- cox.zph(ly.unadj, terms = FALSE)) #doesn't meet assumption p = 0.016
+(ph.ly.adj <- cox.zph(ly.adjusted, terms = FALSE)) #meets assumption
 
 #Colorectal
-(ph.cr.unadj <- cox.zph(cr.unadj)) #meets assumption
-(ph.cr.adj <- cox.zph(cr.adjusted)) #met for CRN and met globally
+(ph.cr.unadj <- cox.zph(cr.unadj, terms = FALSE)) #meets assumption
+(ph.cr.adj <- cox.zph(cr.adjusted, terms = FALSE)) #meets assumption
+
+#For the models, look visually and see how bad
+#the deviations are (or are not)
+
+#all cancers
+ggcoxzph(ph.all.unadj)
+ggcoxzph(ph.all.adj)
+
+#breast
+ggcoxzph(ph.br.unadj)
+ggcoxzph(ph.br.adj)
+
+#prostate
+ggcoxzph(ph.pr.unadj)
+ggcoxzph(ph.pr.adj)
+
+#lung
+ggcoxzph(ph.lu.unadj) 
+ggcoxzph(ph.lu.adj) #this one violated
+
+#Lymphoma
+ggcoxzph(ph.ly.unadj) #this one violated
+ggcoxzph(ph.ly.adj) 
+
+#Colorectal
+ggcoxzph(ph.cr.unadj)
+ggcoxzph(ph.cr.adj)
+
+#none of them are really bad- the violations seem to be largely due to sample size
+
+#In this case, because we're doing complex survey weighting it doesn't really
+#make sense to do RMST mainly because I couldn't find any analogous methods
+#to appropriately account for the sampling procedure. Instead, estimate by time interval
+
+#for lung model, change time interval to < median / > median
+median(lu.svy$variables$fuTime, na.rm = T)
+
+#construct new fu time variable truncated at median weeks
+lu.svy <- update(lu.svy, fuTime1 = ifelse(lu.svy$variables$fuTime > 129.9286, 129.9286,
+                                          lu.svy$variables$fuTime))
+
+#construct new status variable censoring at median for longtime survivors
+lu.svy <- update(lu.svy, cancMort1 = ifelse(lu.svy$variables$fuTime > 129.9286 & 
+                                              lu.svy$variables$cancMort == 1, 0,
+                                          lu.svy$variables$cancMort))
+
+early.lu <- svycoxph(Surv(fuTime1, cancMort1) ~  factor(CRN) +
+                       factor(SEX) + factor(insurance_new) +
+                       age_new + factor(race_new)+
+                       yrsLung,
+                     design = lu.svy)
+
+summary(early.lu)
+#see if ph holds
+(cox.zph(early.lu, terms = F)) #YES!
+
+#now exclude those followed up for short time
+late.lu.svy <- subset(lu.svy, fuTime > 129.9286)
+
+#run model on late survivors
+late.lu <- svycoxph(Surv(fuTime, cancMort) ~  factor(CRN) +
+                       factor(SEX) + factor(insurance_new) +
+                       age_new + factor(race_new)+
+                       yrsLung,
+                     design = late.lu.svy)
+
+summary(late.lu)
+#see if ph holds
+(cox.zph(late.lu, terms = F)) #NOPE
+#visualize it
+ggcoxzph(cox.zph(late.lu, terms = F)) #doesn't look bad
+##############################################################################
+# Do same for lymphoma: get median follow up
+median(ly.svy$variables$fuTime, na.rm = T)
+
+#construct new fu time variable truncated at median weeks
+ly.svy <- update(ly.svy, fuTime1 = ifelse(ly.svy$variables$fuTime > 274.0357, 274.0357,
+                                          ly.svy$variables$fuTime))
+
+#construct new status variable censoring at median for longtime survivors
+ly.svy <- update(ly.svy, cancMort1 = ifelse(ly.svy$variables$fuTime > 274.0357 & 
+                                              ly.svy$variables$cancMort == 1, 0,
+                                            ly.svy$variables$cancMort))
+
+early.ly <- svycoxph(Surv(fuTime1, cancMort1) ~  factor(CRN) +
+                       factor(SEX) + factor(insurance_new) +
+                       age_new + factor(race_new)+
+                       yrsLymp,
+                     design = ly.svy) #seems to have too few cases!
+
+summary(early.ly)
+#see if ph holds
+(cox.zph(early.ly, terms = F)) #YES!
+
+#now exclyde those followed up for short time
+late.ly.svy <- subset(ly.svy, fuTime > 274.0357)
+
+#run model on late survivors
+late.ly <- svycoxph(Surv(fuTime, cancMort) ~  factor(CRN) +
+                      factor(SEX) + factor(insurance_new) +
+                      age_new + factor(race_new)+
+                      yrsLymp,
+                    design = late.ly.svy)
+
+summary(late.ly) #again, not enough cases
+#see if ph holds
+(cox.zph(late.ly, terms = F)) #YES
+
+
 #########################################################################
 #Assumption 2: No influential observations (dfbeta values)
 #########################################################################
@@ -1085,7 +1194,7 @@ comp.svy12 <- subset(comp.svy12,
                      dfb.cr.adj[,10] < abs(.1),
                      dfb.cr.adj[,11] < abs(.005))
 
-#run coxph and crint results : after subsetting there
+#run coxph and print results : after subsetting there
 #weren't enough cases/contrasts to run model
 cr.adj.1 <- svycoxph(Surv(fuTime, cancMort) ~  factor(CRN) +
                        factor(insurance_new) +
