@@ -1399,3 +1399,6 @@ grViz("
 #we decided to not introduce the biased measure in, hoping that most of income's influence
 #in this context is driven through insurance pathways). Why adjust for yrs since diagnosis?
 #In this case it's not a confounder but adjusting for it does improve precision.
+
+
+write.csv(results, "data\\results.csv")

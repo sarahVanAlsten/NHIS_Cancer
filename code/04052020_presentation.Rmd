@@ -110,7 +110,7 @@ grViz("
 >- All analyses conducted in R 3.6.1 and RStudio 1.2.5019
 >- Given unequal sampling probabilities and probable selection bias for mortality-elgible participants, we adjusted all analyses for survey design using the `survey` package in R
 >- T tests/Wilcoxon rank sign tests and Rao-Scott Chi-square tests comparing patients experiencing CRN to those not experiencing CRN:
-  -Age, Sex, Race, Health Insurance Type, Education, Smoking, BMI, vital status
+  -Age, Sex, Race, Health Insurance Type, Education, vital status
 
 # Statistical Analysis, Pt 2
 >- Cox proportional hazards models: unadjusted and adjusted for age, sex, race, insurance, and years since diagnosis
@@ -125,7 +125,48 @@ library(tableone)
 library(survey)
 library(tidyverse)
 
-analyticData <- read_csv("data//analyticData.csv")
+analyticData <- read_csv("https://github.com/sarahVanAlsten/NHIS_Cancer/blob/master/data/analyticData.csv?raw=true")
+
+#give nice names to variables so they will be printed out nicely in the table
+analyticData <- analyticData %>%
+  rowwise()%>%
+  mutate(yrs_any = min(yrsBreast, yrsProst, yrsColorectal, yrsLymp, yrsLung, na.rm =T)) %>%
+  ungroup() %>% #undo the rowwise part 
+  mutate(Race = race_new,
+         Female = SEX,
+         Education = EduR,
+         Smoking = SmokeR,
+         Died = DEAD,
+         `Cancer Mortality` = cancMort,
+         `Skipped Medication` = skipMed,
+         `Delayed Medication` = delayMed,
+         `Restrict Medication` = lessMed,
+         `Couldnt Afford Medication` = BarrierMedR,
+         Age = age_new,
+         `Breast Cancer` = BreastCan,
+         `Prostate Cancer` = ProstateCan,
+         `Lung Cancer` = LungCan,
+         Lymphoma = LymphomaCan,
+         `Colorectal Cancer` = ColRectCan,
+         `Follow up Time` = fuTime,
+         `Years Since Diagnosis` = yrs_any,
+         Insurance = insurance_new) %>%
+  mutate(Race = ifelse(Race == 1, "White",
+                       ifelse(Race == 2, "Black",
+                              ifelse(Race == 3, "Hispanic", 
+                                     ifelse(Race == 4,"Other", NA)))),
+         Education = ifelse(Education == 1, "Less Than High School",
+                            ifelse(Education == 2, "High School/GED",
+                                   ifelse(Education ==3, "Some College",
+                                          ifelse(Education == 4, "College Degree+", NA)))),
+         Smoking = ifelse(Smoking == 0, "Never",
+                          ifelse(Smoking == 1, "Former",
+                                 ifelse(Smoking == 2, "Current", NA))),
+         Insurance = ifelse(Insurance == 0, "None/Refused",
+                            ifelse(Insurance == 1, "Medicaid",
+                                   ifelse(Insurance == 2, "Medicare",
+                                          ifelse(Insurance == 3, "Other",
+                                                 ifelse(Insurance == 4, "Private", NA))))))
 
 #set up the survey design for appropriate weighting
 svy <-svydesign(ids = ~PSU, strata = ~ STRATA, weights = ~new_weight,
@@ -148,23 +189,38 @@ comp.svy <- subset(can.svy, !is.na(age_new) & !is.na(fuTime) & !is.na(race_new) 
 
 #table of descriptives : include cancer type
 #to see whether there's a diff by subtype
-print(
-  svyCreateTableOne(vars = c("race_new", "EduR", "SmokeR", "DEAD",
-                             "cancMort", "skipMed", "delayMed", "lessMed",
-                             "BarrierMedR", "BMI", "SEX", "age_new",
-                             "insurance_new","BreastCan", "ProstateCan",
-                             "LungCan", "LymphomaCan", "ColRectCan", "fuTime",
-                             "yrs_any"),
+kableone(
+  svyCreateTableOne(vars = c("Race", "Education",
+                             "`Cancer Mortality`", "Female",
+                             "Age",
+                             "Insurance","`Breast Cancer`", "`Prostate Cancer`",
+                             "`Lung Cancer`", "Lymphoma", "`Colorectal Cancer`",
+                             "`Follow up Time`", "`Years Since Diagnosis`"),
                     strata = "CRN", 
                     data = comp.svy,
-                    factorVars = c("race_new", "EduR", "SmokeR", "DEAD",
-                                   "cancMort", "skipMed", "delayMed", "lessMed",
-                                   "BarrierMedR", "SEX", "insurance_new",
-                                   "BreastCan", "ProstateCan",
-                                   "LungCan", "LymphomaCan", "ColRectCan")),
-  nonnormal = c("BMI", "age_new", "fuTime", "yrs_any")
-)
+                    factorVars = c("Race", "Education", 
+                             "`Cancer Mortality`",
+                              "Female",
+                             "Insurance","`Breast Cancer`", "`Prostate Cancer`",
+                             "`Lung Cancer`", "Lymphoma", "`Colorectal Cancer`")),
+  align = "r", padding = 1
+  )
 
 ```
+
+# Survival Curves
+```{r, echo = FALSE, warning=FALSE, message=FALSE}
+fit <- survfit(Surv(fuTime, cancMort) ~ CRN,
+               data = comp.svy$variables)
+# Visualize with survminer
+ggsurvplot(fit, data =comp.svy$variables, risk.table = TRUE)
+```
+
+```{r}
+
+```
+
+
+
 
 
