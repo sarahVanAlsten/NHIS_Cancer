@@ -561,8 +561,7 @@ comp.svy$variables %>%
 
 #none of those variables are normally distributed, instead of M(SD)
 #get median and IQR and compare between CRN and no CRN
-table(comp.svy$variables$cancMort
-      )
+
 #table of descriptives : include cancer type
 #to see whether there's a diff by subtype
 print(
