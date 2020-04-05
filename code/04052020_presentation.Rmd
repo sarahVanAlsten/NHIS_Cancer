@@ -187,6 +187,9 @@ comp.svy <- subset(can.svy, !is.na(age_new) & !is.na(fuTime) & !is.na(race_new) 
                      !is.na(CRN) & !is.na(cancMort) & !is.na(yrs_any))
 
 
+```
+
+```{r, eval = FALSE, echo = FALSE}
 #table of descriptives : include cancer type
 #to see whether there's a diff by subtype
 kableone(
@@ -208,17 +211,58 @@ kableone(
 
 ```
 
+
 # Survival Curves
 ```{r, echo = FALSE, warning=FALSE, message=FALSE}
+library(survminer)
 fit <- survfit(Surv(fuTime, cancMort) ~ CRN,
                data = comp.svy$variables)
 # Visualize with survminer
 ggsurvplot(fit, data =comp.svy$variables, risk.table = TRUE)
 ```
 
-```{r}
+
+# Cox Models Results
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+res <- 
+  read_csv("https://github.com/sarahVanAlsten/NHIS_Cancer/blob/master/data/results.csv?raw=true") %>%
+  select(-X1)
+
+#0.8 needs to be changed to 0.80 
+res[3,3] <- str_replace(res[3,3], "0.8", "0.80")
+
+#print out the table
+res %>%
+  kableExtra::kable(format = "html") %>%
+  kableExtra::kable_styling("striped") 
+
 
 ```
+
+# Assumptions: Proportional Hazards
+- All models with the exception of unadjusted lymphoma and adjusted lung cancer met the assumption of proportional hazards (p > 0.05)
+- Note that log likelihood for lymphoma model converged too early indicating we might not have enough cases
+- Graphical inspection of models not meeting assumption did not show substantial deviation from a constant hazard, however:
+
+```{r, echo = FALSE,message=FALSE, error=FALSE, warning = FALSE,fig.align='center'}
+library(cowplot)
+library(patchwork)
+library(magick)
+
+#show the zph plots (at least for the CRN variable)
+p1 <- ggdraw() + draw_image("ly_zph.png", scale = 0.9)
+p2 <- ggdraw() + draw_image("lu_zph.png", scale = 0.9)
+
+p1 + p2
+```
+
+# Estimating Hazard Ratios By Time Period
+- For models that violated PH assumption, we estiamted HR (95% CI in those follow-up for less than versus greater than the median)
+- After stratifying, there weren't enough lymphoma death cases to run models
+- For lung cancer, those followed up for <=129 weeks with CRN had a 20% higher hazard of death (95% CI = 0.72 - 2.00) 
+- Those followed for > 129 weeks with CRN had a 19% lower hazard of death (95% CI = 0.36 - 1.82)
+
+
 
 
 

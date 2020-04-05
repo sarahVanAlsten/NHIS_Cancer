@@ -781,7 +781,8 @@ ggcoxzph(ph.pr.adj)
 
 #lung
 ggcoxzph(ph.lu.unadj) 
-ggcoxzph(ph.lu.adj) #this one violated
+ggcoxzph(ph.lu.adj)
+ggcoxzph(ph.lu.adj,var = "factor(CRN)1") #this one violated
 
 #Lymphoma
 ggcoxzph(ph.ly.unadj) #this one violated
@@ -875,6 +876,20 @@ summary(late.ly) #again, not enough cases
 #########################################################################
 #Assumption 2: No influential observations (dfbeta values)
 #########################################################################
+
+#make second results frame for those after removing
+#influential obs
+#create an empty data frame to store results for table output
+results2 <- cbind.data.frame(rep(" ", 6),
+                            rep(" ", 6),
+                            rep(" ", 6),
+                            rep(" ", 6))
+
+#name the columns of the data frame
+names(results2) <- c("Sample", "Died", "Unadjusted", "Adjusted")
+results2 <- results2 %>%
+  mutate_all(as.character)
+
 #all included cancers
 dfb.all.unadj <- residuals(all.unadj, "dfbeta")
 dfb.all.adj <- residuals(all.adjusted, "dfbeta")
@@ -933,6 +948,9 @@ all.adj.1 <- svycoxph(Surv(fuTime, cancMort) ~  factor(CRN) +
                         yrs_any,
                       design = comp.svy2)
 summary(all.adj.1)
+
+results2 <- addResult(all.unadj.1, all.adj.1, row = 1, type = "All", data = results2)
+
 #################################################################
 #breast cancer
 dfb.br.unadj <- residuals(br.unadj, "dfbeta")
@@ -995,6 +1013,9 @@ summary(br.adj.1)
 
 #how many died by CRN status
 table(comp.svy4$variables$CRN, comp.svy4$variables$cancMort)
+
+results2 <- addResult(br.unadj.1, br.adj.1, row = 2, type = "Breast Cancer", data = results2)
+
 ##################################################################
 #prostate cancer
 dfb.pr.unadj <- residuals(pr.unadj, "dfbeta") 
@@ -1058,6 +1079,10 @@ summary(pr.adj.1)
 
 #CI is very wide: check cases who did by CRN... only 7
 table(comp.svy6$variables$CRN, comp.svy6$variables$cancMort)
+
+results2 <- addResult(pr.unadj.1, pr.adj.1, row = 3, 
+                      type = "Prostate Cancer", data = results2)
+
 ###########################################################################
 #lymphoma
 dfb.ly.unadj <- residuals(ly.unadj, "dfbeta")
@@ -1113,7 +1138,7 @@ comp.svy8 <- subset(comp.svy8,
                     dfb.ly.adj[,10] < .1,
                     dfb.ly.adj[,11] < abs(009))
 
-#run coxph and lyint results : after subsetting there
+#run coxph and print results : after subsetting there
 #weren't enough cases/contrasts to run model
 ly.adj.1 <- svycoxph(Surv(fuTime, cancMort) ~  factor(CRN) +
                        factor(insurance_new) +
@@ -1123,6 +1148,10 @@ ly.adj.1 <- svycoxph(Surv(fuTime, cancMort) ~  factor(CRN) +
 
 summary(ly.adj.1) #again, not enough cases.. only 1
 table(comp.svy8$variables$CRN, comp.svy8$variables$cancMort)
+
+results2 <- addResult(ly.unadj.1, ly.adj.1, row = 4, type = "Lymphoma",
+                      data = results2)
+
 ############################################################################
 #lung cancer
 dfb.lu.unadj <- residuals(lu.unadj, "dfbeta")
@@ -1176,7 +1205,7 @@ comp.svy10 <- subset(comp.svy10,
                      dfb.lu.adj[,9] < .08,
                      dfb.lu.adj[,10] < abs(.1))
 
-#run coxph and luint results : after subsetting there
+#run coxph and print results : after subsetting there
 #weren't enough cases/contrasts to run model
 lu.adj.1 <- svycoxph(Surv(fuTime, cancMort) ~  factor(CRN) +
                        factor(insurance_new) +
@@ -1184,6 +1213,9 @@ lu.adj.1 <- svycoxph(Surv(fuTime, cancMort) ~  factor(CRN) +
                        yrs_any,
                      design = comp.svy10)
 summary(lu.adj.1)
+
+results2 <- addResult(lu.unadj.1, lu.adj.1, row = 5, type = "Lung Cancer",
+                      data = results2)
 
 ##################################################################################
 #colorectal cancer
@@ -1218,7 +1250,8 @@ comp.svy11 <- subset(comp.svy11, dfb.cr.unadj <= 0.01)
 #run coxph and crint results
 cr.unadj.1 <- svycoxph(Surv(fuTime, cancMort) ~ factor(CRN),
                        design = comp.svy11)
-summary(cr.unadj.1) #converged too early, not enough cases; 0 in fact
+summary(cr.unadj.1) 
+#converged too early, not enough cases; 0 in fact w/ CRN
 table(comp.svy11$variables$CRN, comp.svy11$variables$cancMort)
 
 #next the unadjusted model
@@ -1249,6 +1282,11 @@ cr.adj.1 <- svycoxph(Surv(fuTime, cancMort) ~  factor(CRN) +
 summary(cr.adj.1)
 table(comp.svy12$variables$CRN, comp.svy12$variables$cancMort)
 #convered, but only 11 cases died with CRN
+
+results2[6,] <- c("Colorectal Cancer", NA, NA, NA)
+
+#write it out 
+write.csv(results2, "data\\results2.csv")
 ####################################################################
 #Assumption 3: Log linearity with continuous predictors
 ####################################################################
@@ -1400,5 +1438,5 @@ grViz("
 #in this context is driven through insurance pathways). Why adjust for yrs since diagnosis?
 #In this case it's not a confounder but adjusting for it does improve precision.
 
-
+#write out results so we can put them in presentation easily
 write.csv(results, "data\\results.csv")
