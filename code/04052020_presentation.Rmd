@@ -1,0 +1,115 @@
+---
+title: "Cost-related Nonadherence and Cancer Mortality"
+author: "Sarah Van Alsten, Emily Hernandez, Karishma Tandon, and Lauren Grimes"
+date: "4/5/2020"
+output: slidy_presentation
+---
+
+```{r setup, include=FALSE, message=FALSE, echo = FALSE, error=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# United States Cancer Burden
+> - Nearly 2 million new cases annually
+> - Second leading cause of death (~ 600,000)
+> - Incidence + death rate falling, but socioeconomic gaps remain
+> ![](nattinger_2017_medcare_bc_ses_death.jpg)
+
+# SES and Cancer
+
+
+# The Cost of Cancer Care
+
+
+# Cost-related Nonadherence
+
+
+# Study Objectives
+1. Determine the prevalence of CRN in patients with lung, breast, colorectal, and prostate cancer or lymphoma
+
+2. Determine whether CRN is associated with lower cancer-specific survival for patients with lung, breast, colorectal, and prostate cancer or lymphoma.
+
+
+# National Health Interview Survey
+> - Nationally representative multistage probability sample conducted by the National Center for Health Statistics (NCHS) at the CDC
+   - ~100,000 individuals interviewed each year
+   - Low income and minority households oversampled; individuals with health conditions of interest (including cancer) oversampled within households
+
+# Study Sample
+
+
+# Exposure
+- **Cost-related nonadherence**
+  - 3 questions asking participants if, in order to cut costs, they had:
+    - Needed but could not afford prescription medications in the last 12 months?
+    - Skipped medication doses?
+    - Delayed taking medication doses?
+    - Neglected to fill prescription?
+  - Coded CRN as **any yes**
+
+
+# Outcome
+- **Cancer-specific survival/mortality**
+  - Record linkage to the National Death Index
+    - NCHS used probabilistic matching to ascertain cause of death (ICD-10 codes)
+  - Not all respondents were eligbile for record linkage: under age 18, insufficient identifying information, no provided SSN, etc.
+  - Follow-up time = Date of interview - final day in quarter/year when death was ascertained (because exact dates not available) 
+
+# Conceptual Model
+
+```{r, echo=FALSE, warning=FALSE, message = FALSE}
+library(DiagrammeR)
+#make dag
+grViz("
+	digraph causal {
+	
+	  # Nodes
+	  node [shape = plaintext]
+
+	  U [label = 'Income']
+	  D [label = 'CRN']
+	  Y [label = 'Mortality']
+	  S [label = 'Sex']
+	  I [label = 'Insurance']
+	  R [label = 'Race']
+	  A [label = 'Age']
+	  X [label = 'Yrs Since Dx']
+	  T [label = 'Cancer Subtype']
+	  
+	  # Edges
+	  edge [color = black,
+	        arrowhead = vee]
+	  rankdir = LR
+	  D -> Y
+	  U -> D
+	  U -> Y
+	  U -> I
+	  S -> D
+	  S -> Y
+	  I -> D
+	  I -> Y
+	  R -> D
+	  R -> Y
+	  R -> I
+	  A -> I
+	  A -> D
+	  A -> Y
+	  X -> Y
+	  T -> D
+	  T -> Y
+	  R -> T
+	  A -> T
+
+	  # Graph
+	  graph [overlap = true, fontsize = 10]
+	}")
+
+```
+
+# Statistical Analysis
+>- All analyses conducted in R 3.6.1 and RStudio 1.2.5019
+>- Given unequal sampling probabilities and probable selection bias for mortality-elgible participants, we adjusted all analyses for survey design using the `survey`package in R
+
+
+
+

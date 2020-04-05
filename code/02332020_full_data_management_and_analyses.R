@@ -561,7 +561,8 @@ comp.svy$variables %>%
 
 #none of those variables are normally distributed, instead of M(SD)
 #get median and IQR and compare between CRN and no CRN
-
+table(comp.svy$variables$cancMort
+      )
 #table of descriptives : include cancer type
 #to see whether there's a diff by subtype
 print(
@@ -586,6 +587,35 @@ print(
 library(survival)
 library(survminer)
 
+#create an empty data frame to store results for table output
+results <- cbind.data.frame(rep(" ", 6),
+                            rep(" ", 6),
+                            rep(" ", 6),
+                            rep(" ", 6))
+
+#name the columns of the data frame
+names(results) <- c("Sample", "Died", "Unadjusted", "Adjusted")
+results <- results %>%
+  mutate_all(as.character)
+
+#function to add model results into the frame
+addResult <- function(mod1, mod2, type, row, data = results){
+  data[row,] <- c(type, 
+                   #N and % died
+                   paste0(mod1$nevent, " (", round(mod1$nevent/mod1$n, 2)*100, "%)"),
+                   #HR and 95% CI
+                   paste0(round(exp(mod1$coefficients),2), " (", 
+                          round(exp(confint(mod1)[1]),2), " - ",
+                          round(exp(confint(mod1)[2]),2), ")"),
+                   #HR and 95% CI for adjusted model (CRN is 1st coef)
+                   paste0(round(exp(mod2$coefficients)[1],2), " (", 
+                          round(exp(confint(mod2))[1,1],2), " - ",
+                          round(exp(confint(mod2))[1,2],2), ")")
+                   )
+  return(data)
+  
+}
+
 # Collapsing Across Cancer Types ------------------------------------------
 all.unadj <- svycoxph(Surv(fuTime, cancMort) ~ factor(CRN),
                       design = comp.svy)
@@ -601,6 +631,8 @@ all.adjusted <- svycoxph(Surv(fuTime, cancMort) ~ factor(CRN) +
 
 summary(all.adjusted)
 
+#add results to the frame
+results <- addResult(all.unadj, all.adjusted, "All", 1)
 
 # Breast Cancer Only ------------------------------------------------------
 br.svy <- subset(comp.svy, BreastCan == 1 & SEX == 2)
@@ -618,6 +650,9 @@ br.adjusted <- svycoxph(Surv(fuTime, cancMort) ~ factor(CRN) +
                         design = br.svy)
 
 summary(br.adjusted)
+
+#add results to the frame
+results <- addResult(br.unadj, br.adjusted, "Breast Cancer", 2)
 
 # Prostate Cancer Only ----------------------------------------------------
 #(not specifying male only bc that's inherent in the data)
@@ -637,6 +672,10 @@ pr.adjusted <- svycoxph(Surv(fuTime, cancMort) ~ factor(CRN) +
 
 summary(pr.adjusted)
 
+
+#add results to the frame
+results <- addResult(pr.unadj, pr.adjusted, "Prostate Cancer", 3)
+
 # Lung Cancer Only --------------------------------------------------------
 
 lu.svy <- subset(comp.svy, LungCan == 1)
@@ -655,6 +694,8 @@ lu.adjusted <- svycoxph(Surv(fuTime, cancMort) ~ factor(CRN) +
 
 summary(lu.adjusted)
 
+#add results to the frame
+results <- addResult(lu.unadj, lu.adjusted, "Lung Cancer", 4)
 
 # Lymphoma Only -----------------------------------------------------------
 
@@ -674,6 +715,8 @@ ly.adjusted <- svycoxph(Surv(fuTime, cancMort) ~ factor(CRN) +
 
 summary(ly.adjusted) #note loglik converged before var 12; estimates likely imprecise
 
+#add results to the frame
+results <- addResult(ly.unadj, ly.adjusted, "Lymphoma", 5)
 
 # Colorectal Only ---------------------------------------------------------
 
@@ -692,6 +735,9 @@ cr.adjusted <- svycoxph(Surv(fuTime, cancMort) ~ factor(CRN) +
                         design = cr.svy)
 
 summary(cr.adjusted)
+
+#add results to the frame
+results <- addResult(cr.unadj, cr.adjusted, "Colorectal Cancer", 6)
 
 #Assumption 1: Proportional Hazards
 #####################################################################
