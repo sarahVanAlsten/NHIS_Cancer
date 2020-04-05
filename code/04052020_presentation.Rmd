@@ -262,9 +262,21 @@ p1 + p2
 - For lung cancer, those followed up for <=129 weeks with CRN had a 20% higher hazard of death (95% CI = 0.72 - 2.00) 
 - Those followed for > 129 weeks with CRN had a 19% lower hazard of death (95% CI = 0.36 - 1.82)
 
+# Results After Removing Potentially Influential Cases
+
+```{r, echo=FALSE}
+
+res2 <- read.csv("https://github.com/sarahVanAlsten/NHIS_Cancer/blob/master/data/results2.csv?raw=true", stringsAsFactors = FALSE) %>%
+  select(-X)
+
+res2 %>% knitr::kable() %>% kableExtra::kable_styling("striped")
+```
+
+# Linearity
 
 
-
-
-
+# Conclusions
+> - CRN was generally not associated with cancer mortality- if anything it would be protective (except for lung and prostate cancer)
+> - Removing influential cases took away the majority of cases with CRN + estimates were unstable, so the inverse associations observed in those cases should be interpreted with caution
+> -Why? Something for further exploration but could have to do with which treatments individuals skipped, age, other omitted variables which we did not have access to (e.g. cancer type)
 
