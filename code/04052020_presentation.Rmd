@@ -274,6 +274,9 @@ res2 %>% knitr::kable() %>% kableExtra::kable_styling("striped")
 
 # Linearity
 
+```{r}
+
+```
 
 # Conclusions
 > - CRN was generally not associated with cancer mortality- if anything it would be protective (except for lung and prostate cancer)

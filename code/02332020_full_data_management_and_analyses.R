@@ -1283,7 +1283,14 @@ summary(cr.adj.1)
 table(comp.svy12$variables$CRN, comp.svy12$variables$cancMort)
 #convered, but only 11 cases died with CRN
 
-results2[6,] <- c("Colorectal Cancer", NA, NA, NA)
+#add what we have to results
+results2[6,] <- c("Colorectal Cancer",  paste0(cr.adj.1$nevent, " (", 
+                                               round(cr.adj.1$nevent/cr.adj.1$n, 2)*100,
+                                               "%)")
+                  , NA,  
+                  paste0(round(exp(cr.adj.1$coefficients)[1],2), " (", 
+                         round(exp(confint(cr.adj.1))[1,1],2), " - ",
+                         round(exp(confint(cr.adj.1))[1,2],2), ")"))
 
 #write it out 
 write.csv(results2, "data\\results2.csv")
