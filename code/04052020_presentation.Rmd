@@ -22,19 +22,13 @@ knitr::opts_chunk$set(echo = TRUE)
 > - Incidence + death rate falling, but socioeconomic gaps remain
 > ![](nattinger_2017_medcare_bc_ses_death.jpg)
 
-# SES and Cancer
-
-
-# The Cost of Cancer Care
-
-
-# Cost-related Nonadherence
+# The Cost of Cancer Care and Cost-related Nonadherence
 
 
 # Study Objectives
 1. Determine the prevalence of CRN in patients with lung, breast, colorectal, and prostate cancer or lymphoma
 
-2. Determine whether CRN is associated with lower cancer-specific survival for patients with lung, breast, colorectal, and prostate cancer or lymphoma.
+2. Determine whether CRN is associated with lower cancer-specific survival/mortality for patients with lung, breast, colorectal, and prostate cancer or lymphoma.
 
 
 # National Health Interview Survey
@@ -43,6 +37,10 @@ knitr::opts_chunk$set(echo = TRUE)
    - Low income and minority households oversampled; individuals with health conditions of interest (including cancer) oversampled within households
 
 # Study Sample
+> - Individuals reporting a diagnosis of breast, prostate, lung, colon/rectal cancer or lymphoma 
+    - Diagnosed in past 10 years (in attempt to restrict to "current" cases)
+> - All diagnoses are self-reported; no information about stage/subtype
+> - Excluded those who were ineligible for follow-up (insufficient identifying information provided, younger than age 18)
 
 
 # Exposure
@@ -280,13 +278,16 @@ res2 %>% knitr::kable() %>% kableExtra::kable_styling("striped")
 ```
 
 # Linearity
+> - The assumption of linearity (for age, the sole continuous variable) was met
 
-```{r}
-
-```
-
-# Conclusions
+# Discussion
 > - CRN was generally not associated with cancer mortality- if anything it would be protective (except for lung and prostate cancer)
 > - Removing influential cases took away the majority of cases with CRN + estimates were unstable, so the inverse associations observed in those cases should be interpreted with caution
-> -Why? Something for further exploration but could have to do with which treatments individuals skipped, age, other omitted variables which we did not have access to (e.g. cancer type)
+> - Why? Something for further exploration but could have to do with which treatments individuals skipped, age, other omitted variables which we did not have access to (e.g. cancer type, income)
+> - Hasn't been previous literature of CRN and mortality, but results aren't consistent with medical bankruptcy/mortality results --> possible that CRN is more mild form of financial distress?
 
+
+# Strengths + Limitations
+> -Strengths: Follow-up for eligible cases was complete, population-representative sample, inclusion of multiple cancer subtypes makes a case for a more generalizable finding
+> - Limitations: Unable to adjust for all potential confounders [unmeasured], in some cases a limited sample size, self-report may be subject to bias, possible selection bias if cancer cases with CRN died early and weren't surveyed
+> - Future directions: other types of rarer cancers that have higher cost could be analyzed (e.g. bladder), studies with full assessment of confounders
