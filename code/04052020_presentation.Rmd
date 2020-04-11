@@ -268,9 +268,10 @@ p1 + p2
 - Those followed for > 129 weeks with CRN had a 19% lower hazard of death (95% CI = 0.36 - 1.82)
 
 # Results After Removing Potentially Influential Cases
+- Quick note: You may notice that the number of cases after exclusion is **higher** than before exclusion. This is because all N's are survey-weighted. Essentially, cases after exclusion probably had lower selection probability and thus get upweighted more heavily than in overall sample
 
 ```{r, echo=FALSE}
-
+library(tidyverse)
 res2 <- read.csv("https://github.com/sarahVanAlsten/NHIS_Cancer/blob/master/data/results2.csv?raw=true", stringsAsFactors = FALSE) %>%
   select(-X)
 
