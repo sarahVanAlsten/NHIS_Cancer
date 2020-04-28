@@ -301,16 +301,6 @@ subData <- subData %>%
                                             ifelse(EDUCREC1<17, 4, NA)))))) #college or more
 
 
-################################################
-#Income categorical
-#While categories are not same size, NHIS coding is not consistent in groupings.
-#Some potential codings are 10k wide, others are 5k wide, thus the diff gap size btwn categories
-subData <- subData %>%
-  mutate(IncomeR = ifelse(INCIMP1<5, 0, #<25k
-                          ifelse(INCIMP1<22,1, #<45k
-                                 ifelse(INCIMP1<52,2, #<75k
-                                        ifelse(is.na(INCIMP1),NA, 3)))))#75k +
-
 
 ######################################################
 #additional questions about paying for Health Care
@@ -506,7 +496,7 @@ analyticData <- subData %>%
   select(race_new, insurance_new, new_weight,
          PSU, STRATA, cancMort, DEAD, fuTime,
          CRN, lessMed, skipMed, delayMed, BarrierMedR, 
-         IncomeR, SEX, BreastCan, LymphomaCan, ProstateCan,
+         SEX, BreastCan, LymphomaCan, ProstateCan,
          ColRectCan, LungCan, yrsBreast, yrsLymp, yrsProst,
          yrsLung, yrsColorectal, age_new, SmokeR, EduR, BMI, BMIcat,
          MORTELIG, yrs_any)
@@ -568,13 +558,13 @@ print(
   svyCreateTableOne(vars = c("race_new", "EduR", "SmokeR", "DEAD",
                              "cancMort", "skipMed", "delayMed", "lessMed",
                              "BarrierMedR", "BMI", "SEX", "age_new",
-                             "insurance_new", "IncomeR", "BreastCan", "ProstateCan",
+                             "insurance_new", "BreastCan", "ProstateCan",
                              "LungCan", "LymphomaCan", "ColRectCan", "fuTime", "yrs_any"),
                     strata = "CRN", 
                     data = comp.svy,
                     factorVars = c("race_new", "EduR", "SmokeR", "DEAD",
                                    "cancMort", "skipMed", "delayMed", "lessMed",
-                                   "BarrierMedR", "SEX", "insurance_new", "IncomeR",
+                                   "BarrierMedR", "SEX", "insurance_new", 
                                    "BreastCan", "ProstateCan",
                                    "LungCan", "LymphomaCan", "ColRectCan")),
   nonnormal = c("BMI", "age_new", "fuTime", "yrs_any")
@@ -1447,3 +1437,34 @@ grViz("
 
 #write out results so we can put them in presentation easily
 write.csv(results, "data\\results.csv")
+
+
+###########################################################################################
+#Response to Reviewers Additions: Test for interaction btwn insurance+CRN
+
+#run model with interaction before adjustment
+int.mod.unadj <- svycoxph(Surv(fuTime, cancMort) ~ factor(CRN)*factor(insurance_new),
+                          design = comp.svy)
+
+#print results of model with interaction
+summary(int.mod.unadj) 
+
+#none of the levels are sig, so the interaction as a whole
+#shouldn't be either... but can confirm this with a quasi-LR test
+
+#according to survey package author (pg 75) here:
+# https://faculty.washington.edu/tlumley/old-survey/survey-wss.pdf
+#likelihood ratio test aren't available because of the way variance is computed
+#instead, use the regTermTest for all levels of a variable
+regTermTest(int.mod.unadj, test.terms = ~factor(CRN):factor(insurance_new)) # p= 0.31541
+
+#repeat after adjusting model
+#run it after adjustments
+int.mod.adj <- svycoxph(Surv(fuTime, cancMort) ~ factor(CRN)*factor(insurance_new) +
+                          factor(SEX)+ factor(race_new) + age_new + yrs_any,
+                          design = comp.svy)
+
+#print results
+summary(int.mod.adj)
+#still nothing is significant, again confirm
+regTermTest(int.mod.adj, test.terms = ~factor(CRN):factor(insurance_new)) # p= 0.31268 

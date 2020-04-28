@@ -22,7 +22,17 @@ knitr::opts_chunk$set(echo = TRUE)
 > - Incidence + death rate falling, but socioeconomic gaps remain
 > ![](nattinger_2017_medcare_bc_ses_death.jpg)
 
-# The Cost of Cancer Care and Cost-related Nonadherence
+# The Cost of Cancer Care 
+> - More than 50% cancer patients have financial difficulty affording treatment or medication
+> - Preventable cancers associated with higher treatment costs
+> - Around 12% cancer patients rationed drugs received in order to cut costs (cost-related nonadherence)
+> - Most cancer meds costs > $100,000/yr (4x higher than average cost to treat other chronic illnesses)
+
+
+# More About Cost-Related Nonadherence
+- Nonadherence = an individual doesn't follow through physician recommended plan for care
+
+- Cost-related nonadherence (CRN)= primary reason for nonadherence is secondary to cost + financial barriers
 
 
 # Study Objectives
@@ -32,32 +42,30 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 # National Health Interview Survey
-> - Nationally representative multistage probability sample conducted by the National Center for Health Statistics (NCHS) at the CDC
-   - ~100,000 individuals interviewed each year
-   - Low income and minority households oversampled; individuals with health conditions of interest (including cancer) oversampled within households
+- Nationally representative multistage probability sample conducted by the National Center for Health Statistics (NCHS) at the CDC
+- ~100,000 individuals interviewed each year
+- Low income and minority households oversampled; individuals with health conditions of interest (including cancer) oversampled within households
 
 # Study Sample
-> - Individuals reporting a diagnosis of breast, prostate, lung, colon/rectal cancer or lymphoma 
-    - Diagnosed in past 10 years (in attempt to restrict to "current" cases)
-> - All diagnoses are self-reported; no information about stage/subtype
-> - Excluded those who were ineligible for follow-up (insufficient identifying information provided, younger than age 18)
+- Individuals reporting a diagnosis of breast, prostate, lung, colon/rectal cancer or lymphoma 
+- Diagnosed in past 10 years (in attempt to restrict to "current" cases)
+- All diagnoses are self-reported
 
 
 # Exposure
-- **Cost-related nonadherence**
+- Cost-related nonadherence
   - 3 questions asking participants if, in order to cut costs, they had:
-    - Needed but could not afford prescription medications in the last 12 months?
     - Skipped medication doses?
     - Delayed taking medication doses?
     - Neglected to fill prescription?
+- Needed but could not afford prescription medications in the last 12 months?
   - Coded CRN as **any yes**
 
 
 # Outcome
-- **Cancer-specific survival/mortality**
-  - Record linkage to the National Death Index
-    - NCHS used probabilistic matching to ascertain cause of death (ICD-10 codes)
-  - Not all respondents were eligbile for record linkage: under age 18, insufficient identifying information, no provided SSN, etc.
+- Cancer-specific survival/mortality
+  - Record linkage to the National Death Index with ICD-10 codes
+  - Not all respondents were eligbile for record linkage, excluded those under age 18, insufficient identifying information, no provided SSN, etc.
   - Follow-up time = Date of interview - final day in quarter/year when death was ascertained (because exact dates not available) 
 
 # Conceptual Model
@@ -113,15 +121,14 @@ grViz("
 
 # Statistical Analysis, Pt 1
 >- All analyses conducted in R 3.6.1 and RStudio 1.2.5019
->- Given unequal sampling probabilities and probable selection bias for mortality-elgible participants, we adjusted all analyses for survey design using the `survey` package in R
->- T tests/Wilcoxon rank sign tests and Rao-Scott Chi-square tests comparing patients experiencing CRN to those not experiencing CRN:
-  -Age, Sex, Race, Health Insurance Type, Education, vital status
+>- Given unequal sampling probabilities we adjusted all analyses for survey design using the `survey` package in R
+>- T tests and Chi-square tests comparing confounders in patients experiencing CRN to those not experiencing CRN
 
 # Statistical Analysis, Pt 2
->- Cox proportional hazards models: unadjusted and adjusted for age, sex, race, insurance, and years since diagnosis
- - One set of models collapsing across sites, another stratified by site [breast and prostate models not adjusted for sex]
- - Checked models for proportional hazards, linearity, influential cases
- - Violated proportional hazard: estimated HR separately for those with <= median follow-up time and those with > median follow-up time
+- Cox proportional hazards models: unadjusted and adjusted for age, sex, race, insurance, and years since diagnosis
+- One set of models collapsing across sites, another stratified by site [breast and prostate models not adjusted for sex]
+- Checked models for proportional hazards, linearity, influential cases
+
  
 # Descriptive Statistics
 
@@ -142,19 +149,19 @@ analyticData <- analyticData %>%
          Education = EduR,
          Smoking = SmokeR,
          Died = DEAD,
-         `Cancer Mortality` = cancMort,
+         Cancer_Mortality = cancMort,
          `Skipped Medication` = skipMed,
          `Delayed Medication` = delayMed,
          `Restrict Medication` = lessMed,
          `Couldnt Afford Medication` = BarrierMedR,
          Age = age_new,
-         `Breast Cancer` = BreastCan,
-         `Prostate Cancer` = ProstateCan,
-         `Lung Cancer` = LungCan,
+         Breast = BreastCan,
+         Prostate = ProstateCan,
+         Lung = LungCan,
          Lymphoma = LymphomaCan,
-         `Colorectal Cancer` = ColRectCan,
-         `Follow up Time` = fuTime,
-         `Years Since Diagnosis` = yrs_any,
+         Colorectal = ColRectCan,
+         Follow_up_Time = fuTime,
+         Years_Since_Diagnosis = yrs_any,
          Insurance = insurance_new) %>%
   mutate(Race = ifelse(Race == 1, "White",
                        ifelse(Race == 2, "Black",
@@ -194,27 +201,10 @@ comp.svy <- subset(can.svy, !is.na(age_new) & !is.na(fuTime) & !is.na(race_new) 
 
 ```
 
-```{r, eval = FALSE, echo = FALSE}
-#table of descriptives : include cancer type
-#to see whether there's a diff by subtype
-kableone(
-  svyCreateTableOne(vars = c("Race", "Education",
-                             "`Cancer Mortality`", "Female",
-                             "Age",
-                             "Insurance","`Breast Cancer`", "`Prostate Cancer`",
-                             "`Lung Cancer`", "Lymphoma", "`Colorectal Cancer`",
-                             "`Follow up Time`", "`Years Since Diagnosis`"),
-                    strata = "CRN", 
-                    data = comp.svy,
-                    factorVars = c("Race", "Education", 
-                             "`Cancer Mortality`",
-                              "Female",
-                             "Insurance","`Breast Cancer`", "`Prostate Cancer`",
-                             "`Lung Cancer`", "Lymphoma", "`Colorectal Cancer`")),
-  align = "r", padding = 1
-  )
+# Descriptive Statistics
 
-```
+![Descriptives](tableone.png){}
+
 
 
 # Survival Curves
@@ -246,8 +236,7 @@ res %>%
 
 # Assumptions: Proportional Hazards
 - All models with the exception of unadjusted lymphoma and adjusted lung cancer met the assumption of proportional hazards (p > 0.05)
-- Note that log likelihood for lymphoma model converged too early indicating we might not have enough cases
-- Graphical inspection of models not meeting assumption did not show substantial deviation from a constant hazard, however:
+- Graphical inspection of models not meeting assumption did not show substantial deviation from a constant hazard, however
 
 ```{r, echo = FALSE,message=FALSE, error=FALSE, warning = FALSE,fig.align='center'}
 library(cowplot)
@@ -261,34 +250,31 @@ p2 <- ggdraw() + draw_image("lu_zph.png", scale = 0.9)
 p1 + p2
 ```
 
-# Estimating Hazard Ratios By Time Period
-- For models that violated PH assumption, we estiamted HR (95% CI in those follow-up for less than versus greater than the median)
-- After stratifying, there weren't enough lymphoma death cases to run models
-- For lung cancer, those followed up for <=129 weeks with CRN had a 20% higher hazard of death (95% CI = 0.72 - 2.00) 
-- Those followed for > 129 weeks with CRN had a 19% lower hazard of death (95% CI = 0.36 - 1.82)
-
-# Results After Removing Potentially Influential Cases
-- Quick note: You may notice that the number of cases after exclusion is **higher** than before exclusion. This is because all N's are survey-weighted. Essentially, cases after exclusion probably had lower selection probability and thus get upweighted more heavily than in overall sample
-
-```{r, echo=FALSE}
-library(tidyverse)
-res2 <- read.csv("https://github.com/sarahVanAlsten/NHIS_Cancer/blob/master/data/results2.csv?raw=true", stringsAsFactors = FALSE) %>%
-  select(-X)
-
-res2 %>% knitr::kable() %>% kableExtra::kable_styling("striped")
-```
-
-# Linearity
-> - The assumption of linearity (for age, the sole continuous variable) was met
+# Assumptions: Linearity and Influential Cases
+- The assumption of linearity (for age, the sole continuous variable) was met
+- Influential Cases: After removing potentially influential cases, there weren't enough cases for models to converge
+- Generally, the only anomolous feature of influential cases was short follow up time, so we retained them in final models
 
 # Discussion
-> - CRN was generally not associated with cancer mortality- if anything it would be protective (except for lung and prostate cancer)
-> - Removing influential cases took away the majority of cases with CRN + estimates were unstable, so the inverse associations observed in those cases should be interpreted with caution
-> - Why? Something for further exploration but could have to do with which treatments individuals skipped, age, other omitted variables which we did not have access to (e.g. cancer type, income)
-> - Hasn't been previous literature of CRN and mortality, but results aren't consistent with medical bankruptcy/mortality results --> possible that CRN is more mild form of financial distress?
+- CRN was generally not associated with cancer mortality- if anything it would be protective (except for lung and prostate cancer)
+- Removing influential cases took away the majority of cases with CRN + estimates were unstable, so the inverse associations observed in those cases should be interpreted with caution
+- Why? Something for further exploration but could have to do with which treatments individuals skipped, age, other omitted variables which we did not have access to (e.g. cancer type, income)
+- Hasn't been previous literature of CRN and mortality, but results aren't consistent with medical bankruptcy/mortality results --> possible that CRN is more mild form of financial distress?
 
 
 # Strengths + Limitations
-> -Strengths: Follow-up for eligible cases was complete, population-representative sample, inclusion of multiple cancer subtypes makes a case for a more generalizable finding
-> - Limitations: Unable to adjust for all potential confounders [unmeasured], in some cases a limited sample size, self-report may be subject to bias, possible selection bias if cancer cases with CRN died early and weren't surveyed
-> - Future directions: other types of rarer cancers that have higher cost could be analyzed (e.g. bladder), studies with full assessment of confounders
+- Strengths: Follow-up for eligible cases was complete, population-representative sample, inclusion of multiple cancer subtypes makes a case for a more generalizable finding
+- Limitations: Unable to adjust for all potential confounders [unmeasured], in some cases a limited sample size, self-report may be subject to bias, possible selection bias if cancer cases with CRN died early and weren't surveyed
+- Future directions: other types of rarer cancers that have higher cost could be analyzed (e.g. bladder), studies with full assessment of confounders
+
+
+# References
+-	Kochanek KD, Murphy SL, Xu J, Arias E. Deaths: final data for 2017. National Center for Health Statistics (U.S.). Division of Vital Statistics., 2019;68(9). https://stacks.cdc.gov/view/cdc/79486.
+
+- Dieleman JL, Baral R, Birger M, et al. US Spending on Personal Health Care and Public Health, 1996-2013. JAMA. 2016;316(24):2627. doi:10.1001/jama.2016.16885
+
+- Mariotto AB, Robin Yabroff K, Shao Y, Feuer EJ, Brown ML. Projections of the Cost of Cancer Care in the United States: 2010–2020. JNCI J Natl Cancer Inst. 2011;103(2):117-128. doi:10.1093/jnci/djq495
+
+- Americans Can't Keep Up with High Cost of Cancer Treatment. https://www.asbestos.com/featured-stories/high-cost-of-cancer-treatment. Published 2020. Accessed April 11, 2020. 
+
+- Philipson, T. Non-Adherence in Health Care: Are Patients or Policy Makers Ill-Informed? https://www.forbes.com/sites/tomasphilipson/2015/05/08/non-adherence-in-health-care-are-patients-or-policy-makers-ill-informed. Published May 11, 2015. Accessed April 11, 2020. 
